@@ -1,5 +1,5 @@
 import express, { Application } from 'express';
-
+const authRouter = require('./routes/authRoutes');
 const app: Application = express();
 
 app.use(express.json());
@@ -12,5 +12,5 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
+app.use('/api/auth', authRouter);
 export default app;
