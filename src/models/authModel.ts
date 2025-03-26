@@ -1,4 +1,4 @@
-import { Schema,model,Document } from "mongoose";
+import {Schema, model, Document} from "mongoose";
 
 interface UserDocument extends Document {
     username: String,
@@ -7,21 +7,22 @@ interface UserDocument extends Document {
 }
 
 const userSchema = new Schema<UserDocument>({
-    username:{
+    username: {
         type: String,
         required: [true, 'Username is required'],
         unique: true,
         trim: true,
     },
-    password:{
+    password: {
         type: String,
         required: [true, 'Password is required'],
         trim: true,
     },
-    email:{
+    email: {
         type: String,
         require: [true, 'Email is required'],
         unique: true,
+        match: [/.+\@.+\..+/, 'Please fill a valid email address'],
         trim: true,
     }
 });

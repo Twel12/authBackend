@@ -1,15 +1,18 @@
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import UserModel from '../models/authModel';
-import dotenv from 'dotenv';
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import UserModel from "../models/authModel";
 
-dotenv.config();
 const JWT_SECRET: string = process.env.JWT_SECRET || 'secret';
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      res.status(400).json({ error: "All fields are required" });
+      return;
+    }
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -21,53 +24,76 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       email,
     });
 
+    const userExists = await UserModel.findOne({
+      $or: [{ email: email }, { username: username }],
+    });
+
+    if (userExists) {
+      res.status(400).json({ error: "Email or username already exists" });
+      return;
+    }
+
     // Save the user to the database
     const savedUser = await newUser.save();
     // Send user details in the response
-    res.status(500).send({message:"User Successfully registered"}).json({
-      user: {
-        _id: savedUser._id,
-        username: savedUser.username,
-        email: savedUser.email,
-      },
-    });
+    res
+      .status(500)
+      .send({ message: "User Successfully registered" })
+      .json({
+        user: {
+          _id: savedUser._id,
+          username: savedUser.username,
+          email: savedUser.email,
+        },
+      });
   } catch (err) {
-    console.error('Signup error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const login = async(req:Request,res:Response):Promise<void> => {
-  try{
+export const login = async (req: Request, res: Response): Promise<void> => {
+  try {
     const { email, password }: { email: string; password: string } = req.body;
 
     // Find the user in the database
-    const user = await UserModel.findOne({email:email});
+    const user = await UserModel.findOne({ email: email });
 
-    if(!user){
-      res.status(401).json({error:"User does not exist"});
+    if (!user) {
+      res.status(401).json({ error: "User does not exist" });
       return;
-    };
+    }
 
-    if(!user.password){
-      res.status(401).json({error:"User does not exist"});
+    if (!user.password) {
+      res.status(401).json({ error: "User does not exist" });
       return;
-    };
-
-    const isPasswordValid = await bcrypt.compare(password,user.password.toString());
-
-    if(!isPasswordValid){
-      res.status(401).json({error:"Invalid password"});
     }
-    else{
-      const token = jwt.sign({id:user._id},JWT_SECRET,{expiresIn:"2d"});
-      res.status(200).json({status:"success",
-      data:{"token":token,"expiresIn":"7200"}});
+
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.password.toString()
+    );
+
+    if (!isPasswordValid) {
+      res.status(401).json({ error: "Invalid password" });
+    } else {
+      const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" });
+      res
+        .status(200)
+        .cookie("token", token, { httpOnly: true })
+        .json({ status: "success" })
     }
-    
-  } catch(err){
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
+};
 
-}
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.status(200).clearCookie("token").json({ status: "success" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
