@@ -18,10 +18,11 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create a new user
+
     const newUser = new UserModel({
       username,
       password: hashedPassword,
-      email,
+      email
     });
 
     const userExists = await UserModel.findOne({
@@ -36,10 +37,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     // Save the user to the database
     const savedUser = await newUser.save();
     // Send user details in the response
-    res
-      .status(500)
-      .send({ message: "User Successfully registered" })
+    res.status(201)
       .json({
+        message: "User successfully registered",
         user: {
           _id: savedUser._id,
           username: savedUser.username,
@@ -80,7 +80,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" });
       res
         .status(200)
-        .cookie("token", token, { httpOnly: true })
+        .cookie("token", token, { httpOnly: true, secure: true })
         .json({ status: "success" })
     }
   } catch (err) {

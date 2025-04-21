@@ -24,7 +24,11 @@ const userSchema = new Schema<UserDocument>({
         unique: true,
         match: [/.+\@.+\..+/, 'Please fill a valid email address'],
         trim: true,
-    }
+    },
+    date: {
+        type: Date,
+        default: Date.now
+      }
 });
 
 const UserModel = model<UserDocument>('User', userSchema);
